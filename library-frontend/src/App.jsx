@@ -1,29 +1,29 @@
 import Authors from "./components/Authors";
 import Books from "./components/Books";
 import NewBook from "./components/NewBook";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, useNavigate } from "react-router-dom";
 import UpdateAuthor from "./components/UpdateAuthor";
 import { useEffect, useState } from "react";
 import LoginForm from "./components/LoginForm";
-import { useUserValue, useUserDispatch, userActionCreator } from "./UserContext";
+import { useApolloClient } from "@apollo/client";
+import Recommended from "./components/Recommended";
 
 const App = () => {
   const [errorMessage, setErrorMessage] = useState(null)
-  const user = useUserValue()
-  const userDispatch = useUserDispatch()
+  const [token, setToken] = useState(null)
+  const client = useApolloClient()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const savedUserJSON = window.localStorage.getItem('loggedInLibraryUser')
-    if (savedUserJSON) {
-      const savedUser = JSON.parse(savedUserJSON)
-      userDispatch(userActionCreator.set(savedUser))
-    }
-  },[])
-
+    const tokenInMemory = localStorage.getItem('library-user-token')
+    if (tokenInMemory) setToken(tokenInMemory)
+  }, [])
 
   const logout = () => {
-    userDispatch(userActionCreator.reset())
-    window.localStorage.removeItem('loggedInLibraryUser')
+    setToken(null)
+    localStorage.clear()
+    client.resetStore()
+    navigate('/')
   }
 
   const notify = (message) => {
@@ -36,17 +36,17 @@ const App = () => {
     padding: 5
   }
   return (
-    <BrowserRouter>
+    <div>
       <Notify errorMessage={errorMessage}/>
       <div>
         <div>
           <Link to='/authors' style={padding}>authors</Link>
           <Link to='/books' style={padding}>books</Link>
-          { !user && <Link to='/login' style={padding}>login</Link> }
-          { user && <Link to='/addbook' style={padding}>add book</Link> }
-          { user && <Link to='/update-author' style={padding}>update author</Link> }
-          { user && <span>logged in as {user.username} </span>}
-          { user && <button onClick={logout}>logout</button>}
+          { token && <Link to='/addbook' style={padding}>add book</Link> }
+          { token && <Link to='/update-author' style={padding}>update author</Link> }
+          { token && <Link to='/recommend' style={padding}>recommend</Link> }
+          { token && <button onClick={logout}>logout</button>}
+          { !token && <Link to='/login' style={padding}>login</Link> }
         </div>
         <Routes>
           <Route path='/' element={<h1>Library app</h1>} />
@@ -54,10 +54,11 @@ const App = () => {
           <Route path='/books' element={<Books />} />
           <Route path='/addbook' element={<NewBook setError={notify}/>} />
           <Route path='/update-author' element={<UpdateAuthor setError={notify} />} />
-          <Route path='/login' element={<LoginForm setError={notify} />} />
+          <Route path='/login' element={<LoginForm setError={notify} setToken={setToken} />} />
+          <Route path='/recommend' element={<Recommended />} />
         </Routes>
       </div>
-    </BrowserRouter>
+    </div>
   );
 };
 

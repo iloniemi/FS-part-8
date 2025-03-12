@@ -1,20 +1,35 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
-import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
-import { UserContextProvider } from "./UserContext";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import { ApolloClient, ApolloProvider, InMemoryCache, createHttpLink } from '@apollo/client'
+import { setContext } from '@apollo/client/link/context'
+import { BrowserRouter } from 'react-router-dom'
+
+const authLink = setContext((_, { headers }) => {
+  const token = localStorage.getItem('library-user-token')
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `Bearer ${token}` : null,
+    }
+  }
+})
+
+const httpLink = createHttpLink({
+  uri: 'http://localhost:4000',
+})
 
 const apolloclient = new ApolloClient({
-  uri: 'http://localhost:4000',
   cache: new InMemoryCache(),
+  link: authLink.concat(httpLink),
 })
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <UserContextProvider>
-      <ApolloProvider client={apolloclient}>
+    <ApolloProvider client={apolloclient}>
+      <BrowserRouter>
         <App />
-      </ApolloProvider>
-    </UserContextProvider>
+      </BrowserRouter>
+    </ApolloProvider>
   </React.StrictMode>
 );

@@ -2,16 +2,27 @@ import { useMutation, useQuery } from "@apollo/client"
 import { AUTHORS, UPDATE_AUTHOR } from "../queries"
 import { useState } from "react"
 
+
 const UpdateAuthor = ({ setError }) => {
   const [year, setYear] = useState('')
   const [authorSelected, setAuthorSelected] = useState('')
   const authorsResult = useQuery(AUTHORS)
   const [updateAuthor] = useMutation(UPDATE_AUTHOR,
-    { refetchQueries: [{ query: AUTHORS }],
+    { 
+      update: (cache, response) => { // For some reason  allAuthors already has the correct birthyear...
+        cache.updateQuery({ query: AUTHORS }, ({ allAuthors }) => {
+          const updatedAuthor = response.data.editAuthor
+          return {
+            allAuthors: allAuthors.map(author =>
+              author.id !== updatedAuthor.id ? author : {...author, born: updatedAuthor.born})
+          }
+        })
+      },
+      //refetchQueries: [{ query: AUTHORS }],
       onError: (error) => { 
         const messages = error.graphQLErrors.map(e => e.message).join('\n')
         setError(messages)
-      }
+      },
     }
   )
   if (authorsResult.loading) return <div>Loading list of authors</div>
@@ -21,7 +32,7 @@ const UpdateAuthor = ({ setError }) => {
     event.preventDefault()
     if (authorSelected === '' || year==='') return
     const response = await updateAuthor({ variables: {
-      name: 'authorSelected', setBornTo: parseInt(year)
+      name: authorSelected, setBornTo: parseInt(year)
     }})
     console.log('response', response);
     

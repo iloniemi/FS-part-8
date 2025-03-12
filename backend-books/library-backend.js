@@ -230,7 +230,7 @@ const resolvers = {
           }
         })
       }
-      return book
+      return await book.populate('author')
     },
     editAuthor: async (root, {name, setBornTo}, context) => {
       // TODO: require token

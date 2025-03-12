@@ -1,43 +1,36 @@
 import { useMutation } from "@apollo/client"
-import { useState } from "react"
-import { LOGIN } from "../queries"
-import { userActionCreator, useUserDispatch } from "../UserContext"
+import { useEffect, useState } from "react"
+import { LOGIN, ME } from "../queries"
 import { useNavigate } from "react-router-dom"
 
-const LoginForm = ({setError}) => {
+const LoginForm = ({setError, setToken}) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const userDispatch = useUserDispatch()
   const navigate = useNavigate()
+
   
-  const [login] = useMutation(LOGIN,
+  const [login, result] = useMutation(LOGIN,
     {
       onError: (error) => { 
         const messages = error.graphQLErrors.map(e => e.message).join('\n')
         setError(messages)
-      }
+      },
+      refetchQueries: [{ query: ME }],
     }
   )
 
+  useEffect(() => {
+    if (result.data) {
+      const token = result.data.login.value
+      setToken(token)
+      localStorage.setItem('library-user-token', token)
+      navigate('/')
+    }
+  }, [result.data])
+
   const handleSubmit = async (event) => {
     event.preventDefault()
-    console.log('log in attempt', username)
-    const loginResult = await login({ variables: { username, password } })
-    if (!(loginResult.data && loginResult.data.login && loginResult.data.login.value)) return
-    const tokenValue = loginResult.data.login.value
-    console.log('token', tokenValue)
-    const newUser = {
-      username,
-      token: `Bearer ${tokenValue}`
-    }
-    const action = userActionCreator.set(newUser)
-    userDispatch(action)
-    window.localStorage.setItem(
-      'loggedInLibraryUser', JSON.stringify(newUser)
-    )
-    setUsername('')
-    setPassword('')
-    navigate('/')
+    login({ variables: { username, password } })
   }
 
   return (
