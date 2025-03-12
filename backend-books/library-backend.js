@@ -297,7 +297,8 @@ const resolvers = {
         if (author) filter.author = author._id
       }
       if (args.genre) filter.genres = args.genre
-      return  Book.find(filter)
+      const result = await Book.find(filter).populate('author')
+      return  result
     },
     allAuthors: async () => Author.find({}),
     me: async (root, args, context) => context.currentUser

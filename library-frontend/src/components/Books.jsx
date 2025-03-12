@@ -5,6 +5,7 @@ const Books = () => {
   const booksResult = useQuery(BOOKS)
   if (booksResult.loading) return <div>Loading books</div>
   const books = booksResult.data.allBooks
+  
 
   return (
     <div>
@@ -20,7 +21,7 @@ const Books = () => {
           {books.map((a) => (
             <tr key={a.title}>
               <td>{a.title}</td>
-              <td>{a.author}</td>
+              <td>{a.author.name}</td>
               <td>{a.published}</td>
             </tr>
           ))}
