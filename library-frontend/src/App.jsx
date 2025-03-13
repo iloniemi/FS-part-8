@@ -5,8 +5,9 @@ import { Link, Route, Routes, useNavigate } from "react-router-dom";
 import UpdateAuthor from "./components/UpdateAuthor";
 import { useEffect, useState } from "react";
 import LoginForm from "./components/LoginForm";
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, useSubscription } from "@apollo/client";
 import Recommended from "./components/Recommended";
+import { BOOK_ADDED, BOOKS_OF_GENRE } from "./queries";
 
 const App = () => {
   const [errorMessage, setErrorMessage] = useState(null)
@@ -18,6 +19,15 @@ const App = () => {
     const tokenInMemory = localStorage.getItem('library-user-token')
     if (tokenInMemory) setToken(tokenInMemory)
   }, [])
+
+  useSubscription(BOOK_ADDED, {
+    onData: ({data}) => {
+      notify(`book added: ${data.data.bookAdded.title}`)
+      client.refetchQueries({ // This is the proper way to refetch queries
+        include: ['genreBooks'],
+      })
+    }
+  })
 
   const logout = () => {
     setToken(null)
@@ -40,6 +50,7 @@ const App = () => {
       <Notify errorMessage={errorMessage}/>
       <div>
         <div>
+          <Link to='/' style={padding}>home</Link>
           <Link to='/authors' style={padding}>authors</Link>
           <Link to='/books' style={padding}>books</Link>
           { token && <Link to='/addbook' style={padding}>add book</Link> }
